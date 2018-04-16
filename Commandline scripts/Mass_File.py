@@ -120,7 +120,7 @@ def main():
 
     #command line input logic
     while True:
-        if (len(sys.argv) == 1) or ((arguments.verbose or arguments.log) is not None):
+        if (arguments.output is None and arguments.input is None and arguments.extension is None):
             try:
                 test_response = input(
                     "\nPress Y to see a demo otherwise press N or Enter to exit\n")
@@ -139,9 +139,9 @@ def main():
             else:
                 logger.warning("You entered an unknown command, try again")
                 continue
-        elif len(sys.argv) > 1:
-            logger.debug("these are the arguments givem %s", arguments)
-            Mass_file(arguments.extension,
+        else:
+            logger.debug("These are the arguments give %s", vars(arguments))
+            mass_file(arguments.extension,
                           arguments.output, arguments.input)
 
 if __name__ == "__main__":
