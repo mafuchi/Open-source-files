@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # has to be run in py3 since py2 doesn't do unicode with csv files
-from java_to_json import load_tag
+#from java_to_json import load_tag
 from Mass_File import mass_file
 from random import randint
 import sys, logging
@@ -22,30 +22,67 @@ __status__ = "Development"
 
 def convert(arguments):
     logger = logging.getLogger(__name__)
-    Mas_obj = mass_file(arguments.extension, arguments.output, arguments.input)
-    if not os.path.exists('Demo_folder'):
-        os.makedirs('Demo_folder')
+    if arguments.input == 'demo':
+        logger.info('demo Mass file being created')
+        class Mas_demo():
+            _folder_location = None
+            _files = ['demo_set.tsv']
+            _folder_name = 'Output_demo_folder'
+            if not os.path.exists(_folder_name):
+                os.makedirs(_folder_name)
+        Mas_obj = Mas_demo
+
+    else:
+        Mas_obj = mass_file(arguments.extension, arguments.output, arguments.input)
+
     # the dict keys in use
     fieldnames = ('key_word', 'Tweet', 'Tw_ID')
     for old_file in Mas_obj._files:
 
         # open tsv file
         with open(old_file, 'r') as open_old_file:
-            # change to the created folder
-            os.chdir(Mas_obj._folder_location)
 
             # run the csv script on the tsv files
-            # has to be open as file then read as csv
-            # make it accept more than one ext
 
-            working_old_file = csv.reader(open_old_file,
-            delimiter='\t')
-            logger.debug('the current file being processed %s  ', working_old_file)
-            with open(Mas_obj._folder_name + '/' + old_file[:-3] + 'csv', 'w') as new_file:
-                wtr = csv.writer(new_file)
-                for row in working_old_file:
-                    if len(row) == 5:
-                        wtr.writerow((row[1], row[2], row[4]))
+            if re.match('.*\.tsv', old_file):
+                logger.info('..tsv to csv')
+                working_old_file = csv.reader(open_old_file,
+                delimiter='\t')
+                logger.debug('the current file being processed %s  ', old_file)
+                with open(Mas_obj._folder_name + '/' + old_file[:-3] + 'csv', 'w', newline='') as new_file:
+                    wtr = csv.writer(new_file)
+                    for row in working_old_file:
+                        to_output = []
+                        for i in row:
+                            #prints raw
+                            logger.debug((repr(i)))
+                            if i != '':
+                                to_output.append(i)
+                        logger.debug('%d items per row' %(len(to_output)))
+                        wtr.writerow(to_output)
+
+            #for CSV to JSON
+            elif re.match('.*\.csv', old_file):
+                logger.info('..csv to json')
+                with open(open_old_file, 'r') as open_old_file:
+                    reader = csv.DictReader(f, fieldnames)
+                    # create count for rows to properly close json
+                    row_count = sum(1 for row in reader)
+                    # seek back to begining of file, so it can be read for writing
+                    open_old_file.seek(0)
+                    logger.info(row_count)
+                    logger.debug('the current file being processed %s  ', old_file)
+                    i = 0
+                    with open(path + '/' + _file[:-3] + 'json', 'w') as new_file:
+                        new_file.write('[\n')
+                        for row in reader:
+                            json.dump(row, j)
+                            i += 1
+                            if i != (row_count):
+                                new_file.write(',\n')
+                            else:
+                                new_file.write('\n]')
+
 
         new_file.close()
         open_old_file.close()
@@ -53,7 +90,7 @@ def convert(arguments):
     os.chdir('..')
 
 
-def Demo_mode(fun):
+def Demo_mode():
     # create files, read it and output for demo
     logger = logging.getLogger(__name__)
     logger.info('This is a demo of the operation using a test set')
@@ -66,13 +103,14 @@ def Demo_mode(fun):
             writer.writerow(
                 ['',randint(1, 100), randint(1, 100),'', randint(1, 100)])
     f.close()
+    logger.debug('demo tsv file being created')
     class demo_set():
         extension ='tsv'
-        input = None
+        input = 'demo'
         output = None
     convert(demo_set)
     logger.info(
-    'This is a demo of the operation %s using a test set located in Demo_folder' % fun.__name__)
+    'This is a demo of the operation "%s" using a test set located in Demo_folder' % convert.__name__)
 
 
 def main(passed_args=None):
@@ -123,20 +161,12 @@ def main(passed_args=None):
                 continue
 
         if test_response in ['y', 'yes', 'yeah']:
-            Demo_mode(convert)
+            Demo_mode()
             break
         elif test_response in ['n', 'no', '']:
             break
-
-
-        elif len(sys.argv)==2:
-            print ("\n\Optionally, please provide a folder name for the new files, and a  folder location to find the files(current dir will be used otherwise)\nOtherwise press Y or Enter to conitue")
-            sys.exit(1)
-        elif len(sys.argv)==3:
-            print ("\n\tPlease provide the extenion \n")
-            sys.exit(1)
-
-    convert(arguments)
+        else:
+            convert(arguments)
 
 if __name__ == "__main__":
     main()
